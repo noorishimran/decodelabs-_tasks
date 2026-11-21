@@ -1,0 +1,291 @@
+
+/* Global Styling */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: #f2f0ea;
+    color: #263445;
+    line-height: 1.6;
+}
+
+/* Navigation Bar */
+header {
+    background: #243b53;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.navbar {
+    max-width: 1200px;
+    margin: auto;
+    padding: 20px 5%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    color: #a6ddeb;
+    font-size: 28px;
+}
+
+.nav-links {
+    display: flex;
+    list-style: none;
+    gap: 30px;
+}
+
+.nav-links a {
+    text-decoration: none;
+    color: white;
+    font-weight: bold;
+}
+
+.nav-links a:hover {
+    color: #a6ddeb;
+}
+
+#menu-btn {
+    display: none;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 28px;
+    cursor: pointer;
+}
+
+/* Hero Section */
+.hero {
+    min-height: 450px;
+    padding: 100px 20px;
+    text-align: center;
+    background: linear-gradient(135deg, #a6ddeb, #ac8c75);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.hero h1 {
+    font-size: clamp(30px, 5vw, 52px);
+    max-width: 750px;
+    margin-bottom: 20px;
+}
+
+.hero p {
+    font-size: 18px;
+    margin-bottom: 30px;
+}
+
+.btn {
+    background: #243b53;
+    color: white;
+    padding: 14px 30px;
+    text-decoration: none;
+    border-radius: 8px;
+}
+
+.btn:hover {
+    background: #385b7a;
+}
+
+/* Courses */
+.courses {
+    padding: 70px 5%;
+    text-align: center;
+    max-width: 1200px;
+    margin: auto;
+}
+
+.courses h2 {
+    font-size: 32px;
+    margin-bottom: 40px;
+}
+
+.course-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 25px;
+}
+
+.course-card {
+    background: white;
+    padding: 35px 25px;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+    transition: transform 0.3s;
+}
+
+.course-card:hover {
+    transform: translateY(-8px);
+}
+
+.course-card h3 {
+    margin-bottom: 15px;
+    color: #243b53;
+}
+
+.course-card p {
+    margin-bottom: 20px;
+}
+
+.enroll-btn {
+    background: #ac8c75;
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.enroll-btn:hover {
+    background: #8b6c57;
+}
+
+/* About and Contact */
+.about, .contact {
+    padding: 70px 20px;
+    text-align: center;
+}
+
+.about {
+    background: #e4f4f8;
+}
+
+.contact {
+    background: #ffffff;
+}
+
+.about h2, .contact h2 {
+    margin-bottom: 20px;
+}
+
+/* Footer */
+footer {
+    background: #243b53;
+    color: white;
+    padding: 25px;
+    text-align: center;
+}
+
+section {
+    scroll-margin-top: 80px;
+}
+
+/* Tablet Responsive */
+@media (max-width: 1023px) {
+    .course-container {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Mobile Responsive */
+@media (max-width: 767px) {
+    .navbar {
+        flex-wrap: wrap;
+    }
+
+    #menu-btn {
+        display: block;
+    }
+
+    .nav-links {
+        display: none;
+        flex-direction: column;
+        width: 100%;
+        gap: 15px;
+        padding-top: 20px;
+    }
+
+    .nav-links.active {
+        display: flex;
+    }
+
+    .hero {
+        min-height: 380px;
+        padding: 70px 20px;
+    }
+
+    .hero p {
+        font-size: 16px;
+    }
+
+    .course-container {
+        grid-template-columns: 1fr;
+    }
+
+    .courses {
+        padding: 50px 20px;
+    }
+}
+
+
+/* Accessibility and Final Improvements */
+
+/* Better color contrast */
+.enroll-btn {
+    background: #72503e;
+}
+
+.enroll-btn:hover {
+    background: #593b2d;
+}
+
+/* Enrolled course indication */
+.enroll-btn[aria-pressed="true"] {
+    background: #235e49;
+}
+
+/* Keyboard accessibility */
+a:focus-visible,
+button:focus-visible {
+    outline: 3px solid #f5a623;
+    outline-offset: 4px;
+}
+
+/* Prevent content overflow */
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Smooth card interaction */
+.course-card {
+    overflow-wrap: anywhere;
+}
+
+/* Small mobile devices */
+@media (max-width: 360px) {
+    .navbar {
+        padding: 15px;
+    }
+
+    .hero h1 {
+        font-size: 28px;
+    }
+
+    .course-card {
+        padding: 25px 15px;
+    }
+}
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
+    .course-card {
+        transition: none;
+    }
+}
