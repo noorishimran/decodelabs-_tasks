@@ -1,279 +1,175 @@
-
 "use strict";
-
-// SkillHub Full Stack Application
-// DecodeLabs Project 2 - Backend API
-
+// DecodeLabs Project 3: SkillHub API + persistent SQLite database
+// Node.js 22.13+ recommended. No npm packages required.
 const http = require("node:http");
+const fs = require("node:fs");
+const path = require("node:path");
+const { DatabaseSync } = require("node:sqlite");
 
-// Available Courses
-const courses = [
-  {
-    id: 1,
-    title: "Web Development",
-    description: "Learn HTML, CSS and JavaScript."
-  },
-  {
-    id: 2,
-    title: "Python Programming",
-    description: "Learn Python from beginner to advanced."
-  },
-  {
-    id: 3,
-    title: "UI/UX Design",
-    description: "Learn modern website and app design."
-  }
-];
+const dataDir = path.join(__dirname, "data");
+const defaultDbFile = path.join(dataDir, "skillhub.sqlite");
+const cors = {
+  "Access-Control-Allow-Origin": "*", // Local demo only
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type"
+};
 
-// Experience Levels
-const allowedLevels = [
-  "Beginner",
-  "Intermediate",
-  "Advanced"
-];
-
-// JSON Response Helper
-function sendJSON(res, statusCode, payload) {
-  res.writeHead(statusCode, {
-    "Content-Type": "application/json; charset=utf-8",
-    // Local demo only. Restrict origins in production.
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type"
-  });
-
+function sendJSON(res, status, payload) {
+  res.writeHead(status, { "Content-Type": "application/json; charset=utf-8", ...cors });
   res.end(JSON.stringify(payload, null, 2));
 }
 
-// Create Backend Server
-function createServer() {
+function createServer(options = {}) {
+  // node:test gets an isolated in-memory database; the app gets a real file.
+  const dbFile = options.dbFile || (process.env.NODE_TEST_CONTEXT ? ":memory:" : defaultDbFile);
+  if (dbFile !== ":memory:") fs.mkdirSync(path.dirname(dbFile), { recursive: true });
+  const db = new DatabaseSync(dbFile);
+  db.exec(fs.readFileSync(path.join(__dirname, "schema.sql"), "utf8"));
 
-  // In-memory database
-  const enrollments = [];
-  let nextId = 1;
+  const seed = db.prepare("INSERT OR IGNORE INTO courses(id, title, description) VALUES (?, ?, ?)");
+  seed.run(1, "Web Development", "Learn HTML, CSS and JavaScript.");
+  seed.run(2, "Python Programming", "Learn Python from beginner to advanced.");
+  seed.run(3, "UI/UX Design", "Learn modern website and app design.");
 
-  return http.createServer(async (req, res) => {
+  const enrollmentSQL = `SELECT e.id, e.student_name AS studentName,
+    e.course_id AS courseId, c.title AS courseName,
+    e.level, e.goal, e.status, e.enrolled_at AS enrolledAt
+    FROM enrollments e JOIN courses c ON c.id = e.course_id`;
+  const getEnrollment = db.prepare(enrollmentSQL + " WHERE e.id = ?");
+  const findCourse = db.prepare("SELECT id FROM courses WHERE id = ?");
 
-    const path = new URL(
-      req.url,
-      "http://localhost"
-    ).pathname;
+  async function readJSON(req) {
+    if (!(req.headers["content-type"] || "").toLowerCase().includes("application/json")) {
+      return { status: 415, error: "Content-Type must be application/json" };
+    }
+    const chunks = [];
+    let size = 0;
+    try {
+      for await (const chunk of req) {
+        size += chunk.length;
+        if (size > 10240) return { status: 413, error: "Request body is too large" };
+        chunks.push(chunk);
+      }
+      const value = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+      if (!value || typeof value !== "object" || Array.isArray(value)) {
+        return { status: 400, error: "JSON body must be an object" };
+      }
+      return { value };
+    } catch {
+      return { status: 400, error: "Invalid JSON body" };
+    }
+  }
 
-    // Handle CORS
+  function validateEnrollment(record) {
+    const { studentName, courseId, level = null, goal = "" } = record;
+    if (typeof studentName !== "string" || studentName.trim().length < 2 || studentName.trim().length > 60) {
+      return "studentName must contain 2 to 60 characters";
+    }
+    if (!Number.isInteger(courseId) || !findCourse.get(courseId)) return "Invalid courseId";
+    if (level !== null && !["Beginner", "Intermediate", "Advanced"].includes(level)) {
+      return "Invalid experience level";
+    }
+    if (typeof goal !== "string" || goal.trim().length > 160) {
+      return "Learning goal must contain 160 characters or less";
+    }
+    if (record.status !== undefined && !["Enrolled", "Completed", "Cancelled"].includes(record.status)) {
+      return "Invalid enrollment status";
+    }
+    return null;
+  }
+
+  const server = http.createServer(async (req, res) => {
+    const urlPath = new URL(req.url, "http://localhost").pathname;
     if (req.method === "OPTIONS") {
-      res.writeHead(204, {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type"
-      });
-
+      res.writeHead(204, cors);
       return res.end();
     }
-
-    // Home API
-    if (req.method === "GET" && path === "/") {
+    if (req.method === "GET" && urlPath === "/") {
       return sendJSON(res, 200, {
-        project: "SkillHub Full Stack Application",
-        developer: "DecodeLabs Intern",
-        message: "Backend API running successfully",
-        version: "2.0",
-        endpoints: [
-          "GET /api/health",
-          "GET /api/courses",
-          "GET /api/enrollments",
-          "POST /api/enrollments"
-        ]
+        project: "SkillHub Database API", message: "SQLite backend is running",
+        endpoints: ["GET /api/health", "GET /api/courses", "GET /api/enrollments",
+          "GET /api/enrollments/:id", "POST /api/enrollments",
+          "PUT /api/enrollments/:id", "DELETE /api/enrollments/:id"]
       });
     }
-
-    // Health API
-    if (req.method === "GET" && path === "/api/health") {
-      return sendJSON(res, 200, {
-        status: "ok",
-        message: "SkillHub API is healthy"
-      });
+    if (req.method === "GET" && urlPath === "/api/health") {
+      db.prepare("SELECT 1").get();
+      return sendJSON(res, 200, { status: "ok", database: "sqlite" });
+    }
+    if (req.method === "GET" && urlPath === "/api/courses") {
+      const courses = db.prepare("SELECT id, title, description FROM courses ORDER BY id").all();
+      return sendJSON(res, 200, { count: courses.length, courses });
+    }
+    if (req.method === "GET" && urlPath === "/api/enrollments") {
+      const enrollments = db.prepare(enrollmentSQL + " ORDER BY e.id DESC").all();
+      return sendJSON(res, 200, { count: enrollments.length, enrollments });
     }
 
-    // GET Courses
-    if (req.method === "GET" && path === "/api/courses") {
-      return sendJSON(res, 200, {
-        count: courses.length,
-        courses
-      });
-    }
+    const match = urlPath.match(/^\/api\/enrollments\/(\d+)$/);
+    if (match) {
+      const id = Number(match[1]);
+      if (!Number.isSafeInteger(id) || id < 1) return sendJSON(res, 400, { error: "Invalid enrollment ID" });
+      const current = getEnrollment.get(id);
+      if (!current) return sendJSON(res, 404, { error: "Enrollment not found" });
 
-    // GET Enrollments
-    if (req.method === "GET" && path === "/api/enrollments") {
-      return sendJSON(res, 200, {
-        count: enrollments.length,
-        enrollments
-      });
-    }
+      if (req.method === "GET") return sendJSON(res, 200, { enrollment: current });
 
-    // POST Enrollment
-    if (req.method === "POST" && path === "/api/enrollments") {
-
-      const contentType = (
-        req.headers["content-type"] || ""
-      ).toLowerCase();
-
-      if (!contentType.includes("application/json")) {
-        return sendJSON(res, 415, {
-          error: "Content-Type must be application/json"
-        });
-      }
-
-      // Read Request Body
-      let totalBytes = 0;
-      const chunks = [];
-
-      try {
-        for await (const chunk of req) {
-          totalBytes += chunk.length;
-
-          if (totalBytes > 10240) {
-            return sendJSON(res, 413, {
-              error: "Request body is too large"
-            });
+      if (req.method === "PUT") {
+        const parsed = await readJSON(req);
+        if (parsed.error) return sendJSON(res, parsed.status, { error: parsed.error });
+        if (!Object.keys(parsed.value).some(k => ["studentName", "courseId", "level", "goal", "status"].includes(k))) {
+          return sendJSON(res, 400, { error: "Provide at least one field to update" });
+        }
+        const next = { ...current, ...parsed.value };
+        const error = validateEnrollment(next);
+        if (error) return sendJSON(res, 400, { error });
+        try {
+          db.prepare(`UPDATE enrollments SET student_name=?, course_id=?, level=?, goal=?, status=? WHERE id=?`)
+            .run(next.studentName.trim(), next.courseId, next.level ?? null, next.goal.trim(), next.status, id);
+        } catch (err) {
+          if (String(err.message).includes("UNIQUE constraint")) {
+            return sendJSON(res, 409, { error: "This student is already enrolled in that course" });
           }
-
-          chunks.push(chunk);
+          return sendJSON(res, 500, { error: "Database update failed" });
         }
-      } catch {
-        if (!res.headersSent) {
-          sendJSON(res, 400, {
-            error: "Could not read request body"
-          });
-        }
-        return;
+        return sendJSON(res, 200, { message: "Enrollment updated successfully", enrollment: getEnrollment.get(id) });
       }
-
-      // Parse JSON
-      let body;
-
-      try {
-        body = JSON.parse(
-          Buffer.concat(chunks).toString("utf8")
-        );
-      } catch {
-        return sendJSON(res, 400, {
-          error: "Invalid JSON body"
-        });
+      if (req.method === "DELETE") {
+        db.prepare("DELETE FROM enrollments WHERE id=?").run(id);
+        return sendJSON(res, 200, { message: "Enrollment deleted successfully", id });
       }
-
-      if (
-        !body ||
-        typeof body !== "object" ||
-        Array.isArray(body)
-      ) {
-        return sendJSON(res, 400, {
-          error: "JSON body must be an object"
-        });
-      }
-
-      // Extract Form Details
-      const {
-        studentName,
-        courseId,
-        level = null,
-        goal = ""
-      } = body;
-
-      // Validate Student Name
-      if (
-        typeof studentName !== "string" ||
-        studentName.trim().length < 2 ||
-        studentName.trim().length > 60
-      ) {
-        return sendJSON(res, 400, {
-          error: "Student name must contain 2 to 60 characters"
-        });
-      }
-
-      // Validate Course
-      const course = courses.find(
-        c => c.id === courseId
-      );
-
-      if (!Number.isInteger(courseId) || !course) {
-        return sendJSON(res, 400, {
-          error: "Please select a valid course"
-        });
-      }
-
-      // Validate Experience Level
-      if (
-        level !== null &&
-        !allowedLevels.includes(level)
-      ) {
-        return sendJSON(res, 400, {
-          error: "Please select a valid experience level"
-        });
-      }
-
-      // Validate Learning Goal
-      if (
-        typeof goal !== "string" ||
-        goal.trim().length > 160
-      ) {
-        return sendJSON(res, 400, {
-          error: "Learning goal must contain 160 characters or less"
-        });
-      }
-
-      const cleanName = studentName.trim();
-
-      // Prevent Duplicate Enrollment
-      const alreadyEnrolled = enrollments.some(
-        e =>
-          e.courseId === courseId &&
-          e.studentName.toLowerCase() === cleanName.toLowerCase()
-      );
-
-      if (alreadyEnrolled) {
-        return sendJSON(res, 409, {
-          error: "This student is already enrolled in that course"
-        });
-      }
-
-      // Create Enrollment Record
-      const enrollment = {
-        id: nextId++,
-        studentName: cleanName,
-        courseId,
-        courseName: course.title,
-        level,
-        goal: goal.trim(),
-        enrolledAt: new Date().toISOString(),
-        status: "Enrolled"
-      };
-
-      // Save Enrollment
-      enrollments.push(enrollment);
-
-      // Success Response
-      return sendJSON(res, 201, {
-        message: "Enrollment created successfully",
-        enrollment
-      });
     }
 
-    // Handle Unknown Endpoint
-    return sendJSON(res, 404, {
-      error: "Endpoint not found"
-    });
+    if (req.method === "POST" && urlPath === "/api/enrollments") {
+      const parsed = await readJSON(req);
+      if (parsed.error) return sendJSON(res, parsed.status, { error: parsed.error });
+      const record = parsed.value;
+      const error = validateEnrollment(record);
+      if (error) return sendJSON(res, 400, { error });
+      try {
+        const result = db.prepare(`INSERT INTO enrollments(student_name, course_id, level, goal)
+          VALUES (?, ?, ?, ?)`).run(
+            record.studentName.trim(), record.courseId, record.level ?? null, (record.goal ?? "").trim()
+          );
+        return sendJSON(res, 201, {
+          message: "Enrollment created successfully",
+          enrollment: getEnrollment.get(Number(result.lastInsertRowid))
+        });
+      } catch (err) {
+        if (String(err.message).includes("UNIQUE constraint")) {
+          return sendJSON(res, 409, { error: "This student is already enrolled in that course" });
+        }
+        return sendJSON(res, 500, { error: "Database insert failed" });
+      }
+    }
+    return sendJSON(res, 404, { error: "Endpoint not found" });
   });
+  server.on("close", () => db.close());
+  return server;
 }
 
-// Start Backend
 if (require.main === module) {
   const port = Number(process.env.PORT) || 3000;
-
-  createServer().listen(port, () => {
-    console.log(
-      `SkillHub API running at http://localhost:${port}`
-    );
-  });
+  createServer().listen(port, () => console.log(`SkillHub SQLite API running at http://localhost:${port}`));
 }
-
 module.exports = { createServer };
