@@ -1,5 +1,6 @@
 
-/* Global Styling */
+/* SKILLHUB MAIN WEBSITE STYLING */
+
 * {
     margin: 0;
     padding: 0;
@@ -17,7 +18,7 @@ body {
     line-height: 1.6;
 }
 
-/* Navigation Bar */
+/* Navigation */
 header {
     background: #243b53;
     position: sticky;
@@ -46,8 +47,8 @@ header {
 }
 
 .nav-links a {
-    text-decoration: none;
     color: white;
+    text-decoration: none;
     font-weight: bold;
 }
 
@@ -64,7 +65,7 @@ header {
     cursor: pointer;
 }
 
-/* Hero Section */
+/* Hero */
 .hero {
     min-height: 450px;
     padding: 100px 20px;
@@ -91,8 +92,8 @@ header {
     background: #243b53;
     color: white;
     padding: 14px 30px;
-    text-decoration: none;
     border-radius: 8px;
+    text-decoration: none;
 }
 
 .btn:hover {
@@ -140,7 +141,7 @@ header {
 }
 
 .enroll-btn {
-    background: #ac8c75;
+    background: #72503e;
     color: white;
     border: none;
     padding: 12px 25px;
@@ -149,7 +150,11 @@ header {
 }
 
 .enroll-btn:hover {
-    background: #8b6c57;
+    background: #593b2d;
+}
+
+.enroll-btn[aria-pressed="true"] {
+    background: #235e49;
 }
 
 /* About and Contact */
@@ -163,7 +168,7 @@ header {
 }
 
 .contact {
-    background: #ffffff;
+    background: white;
 }
 
 .about h2, .contact h2 {
@@ -182,14 +187,14 @@ section {
     scroll-margin-top: 80px;
 }
 
-/* Tablet Responsive */
+/* Tablet */
 @media (max-width: 1023px) {
     .course-container {
         grid-template-columns: repeat(2, 1fr);
     }
 }
 
-/* Mobile Responsive */
+/* Mobile */
 @media (max-width: 767px) {
     .navbar {
         flex-wrap: wrap;
@@ -216,10 +221,6 @@ section {
         padding: 70px 20px;
     }
 
-    .hero p {
-        font-size: 16px;
-    }
-
     .course-container {
         grid-template-columns: 1fr;
     }
@@ -229,63 +230,214 @@ section {
     }
 }
 
-
-/* Accessibility and Final Improvements */
-
-/* Better color contrast */
-.enroll-btn {
-    background: #72503e;
-}
-
-.enroll-btn:hover {
-    background: #593b2d;
-}
-
-/* Enrolled course indication */
-.enroll-btn[aria-pressed="true"] {
-    background: #235e49;
-}
-
-/* Keyboard accessibility */
 a:focus-visible,
 button:focus-visible {
     outline: 3px solid #f5a623;
     outline-offset: 4px;
 }
 
-/* Prevent content overflow */
-img {
-    max-width: 100%;
-    height: auto;
+/* Professional Enrollment Form */
+.enrollment-dialog {
+  padding: 0;
+  border: none;
+  border-radius: 22px;
+  width: min(94vw, 540px);
+  max-height: 90vh;
+  overflow-y: auto;
+  color: #243b53;
+  background: white;
+  box-shadow: 0 22px 75px rgba(12,30,50,.30);
 }
 
-/* Smooth card interaction */
-.course-card {
-    overflow-wrap: anywhere;
+.enrollment-dialog::backdrop {
+  background: rgba(10,21,37,.65);
+  backdrop-filter: blur(5px);
 }
 
-/* Small mobile devices */
-@media (max-width: 360px) {
-    .navbar {
-        padding: 15px;
-    }
-
-    .hero h1 {
-        font-size: 28px;
-    }
-
-    .course-card {
-        padding: 25px 15px;
-    }
+.enrollment-dialog [hidden] {
+  display: none !important;
 }
 
-/* Respect reduced motion preference */
-@media (prefers-reduced-motion: reduce) {
-    html {
-        scroll-behavior: auto;
-    }
+.enrollment-panel {
+  overflow: hidden;
+  border-radius: 22px;
+}
 
-    .course-card {
-        transition: none;
-    }
+.enrollment-banner {
+  position: relative;
+  background: linear-gradient(125deg, #243b53, #276e83);
+  color: white;
+  padding: 30px 32px;
+}
+
+.form-eyebrow {
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: #a9edee;
+  font-weight: bold;
+}
+
+.enrollment-banner h2 {
+  font-size: 27px;
+  color: white;
+  margin: 10px 35px 8px 0;
+}
+
+.enrollment-banner p {
+  font-size: 14px;
+  color: #e2f3f6;
+}
+
+.dialog-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid #ffffff55;
+  background: #ffffff22;
+  color: white;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.enrollment-content {
+  padding: 26px 32px 30px;
+}
+
+.form-step {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 11px;
+  color: #597587;
+  font-weight: bold;
+  border-bottom: 1px solid #e7edf0;
+  padding-bottom: 14px;
+  margin-bottom: 16px;
+}
+
+#enrollForm {
+  display: grid;
+  gap: 9px;
+}
+
+#enrollForm > label:not(.check-row) {
+  font-size: 13px;
+  font-weight: bold;
+  margin-top: 8px;
+}
+
+#enrollForm > input,
+#enrollForm > select,
+#enrollForm > textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d5e0e6;
+  border-radius: 10px;
+  background: #f8fafb;
+  color: #243b53;
+  font: inherit;
+  font-size: 14px;
+}
+
+#enrollForm > textarea {
+  resize: vertical;
+}
+
+#enrollForm :is(input, select, textarea):focus-visible {
+  outline: 3px solid #8ddde6;
+  outline-offset: 2px;
+}
+
+.check-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 12px 0 6px;
+  font-size: 13px;
+}
+
+.check-row input {
+  margin-top: 4px;
+  accent-color: #276e83;
+}
+
+.submit-enrollment {
+  background: #243b53;
+  color: white;
+  padding: 15px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: bold;
+  margin-top: 8px;
+}
+
+.submit-enrollment:hover {
+  background: #315a75;
+}
+
+.submit-enrollment:disabled {
+  opacity: .6;
+  cursor: wait;
+}
+
+.form-error {
+  padding: 10px;
+  background: #fff1f1;
+  color: #a32232;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.form-hint {
+  text-align: center;
+  color: #778996;
+  font-size: 12px;
+}
+
+.enroll-success {
+  padding: 25px 0;
+  text-align: center;
+}
+
+.success-icon {
+  display: grid;
+  place-items: center;
+  width: 65px;
+  height: 65px;
+  margin: 0 auto 15px;
+  border-radius: 50%;
+  color: #185943;
+  background: #d7f3e5;
+  font-size: 32px;
+}
+
+.enroll-success h3 {
+  font-size: 25px;
+}
+
+.enroll-success p {
+  margin: 10px 0 20px;
+  color: #647889;
+}
+
+.enroll-success button {
+  width: 100%;
+}
+
+@media (max-width: 550px) {
+  .enrollment-banner {
+    padding: 25px 20px;
+  }
+
+  .enrollment-content {
+    padding: 22px 20px;
+  }
+
+  .enrollment-banner h2 {
+    font-size: 23px;
+  }
 }

@@ -1,0 +1,15 @@
+{
+  "name": "skillhub-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DecodeLabs Project 2 - Backend REST API with input validation",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "UNLICENSED"
+}
